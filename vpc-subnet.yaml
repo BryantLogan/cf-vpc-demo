@@ -59,6 +59,19 @@ Resources:
           Key: "Name"
           Value: "PrivateSubnetB"
 
+# Create security group to allow SSH for EC2 Instance
+  SSHSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      VpcId:
+        Ref: "DemoVPC"
+      GroupDescription: "Enable SSH access via port 22"
+      SecurityGroupIngress:
+        - CidrIp: "0.0.0.0/0"
+          FromPort: 22
+          IpProtocol: "tcp"
+          ToPort: 22
+
 # Create EC2 Instance in public subnet A with public IPv4 address
   Ec2Instance:
     Type: AWS::EC2::Instance
@@ -68,6 +81,8 @@ Resources:
       NetworkInterfaces:
         - AssociatePublicIpAddress: "true"
           DeviceIndex: "0"
+          GroupSet:
+            - !Ref SSHSecurityGroup
           SubnetId:
             Ref: "PublicSubnetA"
 
