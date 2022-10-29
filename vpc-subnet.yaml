@@ -1,4 +1,5 @@
 Resources:
+# Create VPC
   DemoVPC:
     Type: AWS::EC2::VPC
     Properties:
@@ -7,7 +8,8 @@ Resources:
         - 
           Key: "DemoVPC"
           Value: "AWS::StackName"
-  
+
+# Create 2 public subnets
   PublicSubnetA:
     Type: AWS::EC2::Subnet
     Properties:
@@ -32,6 +34,7 @@ Resources:
           Key: "Name"
           Value: "PublicSubnetB"
 
+# Create 2 private subnets
   PrivateSubnetA:
     Type: AWS::EC2::Subnet
     Properties:
@@ -55,3 +58,15 @@ Resources:
         -
           Key: "Name"
           Value: "PrivateSubnetB"
+
+# Create EC2 Instance in public subnet A with public IPv4 address
+  Ec2Instance:
+    Type: AWS::EC2::Instance
+    Properties:
+      ImageId: "ami-09d3b3274b6c5d4aa"
+      InstanceType: "t2.micro"
+      NetworkInterfaces:
+        - AssociatePublicIpAddress: "true"
+          DeviceIndex: "0"
+          SubnetId:
+            Ref: "PublicSubnetA"
