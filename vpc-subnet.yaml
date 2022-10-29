@@ -8,3 +8,50 @@ Resources:
           Key: "DemoVPC"
           Value: "AWS::StackName"
   
+  PublicSubnetA:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: 
+        Ref: "DemoVPC"      
+      AvailabilityZone: "us-east-1a"
+      CidrBlock: "10.0.0.0/24"
+      Tags:
+        -
+          Key: "Name"
+          Value: "PublicSubnetA"
+
+  PublicSubnetB:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: 
+        Ref: "DemoVPC"      
+      AvailabilityZone: "us-east-1b"
+      CidrBlock: "10.0.1.0/24"
+      Tags:
+        -
+          Key: "Name"
+          Value: "PublicSubnetB"
+
+  PrivateSubnetA:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: 
+        Ref: "DemoVPC"      
+      AvailabilityZone: "us-east-1a"
+      CidrBlock: "10.0.16.0/20"
+      Tags:
+        -
+          Key: "Name"
+          Value: "PrivateSubnetA"
+
+  PrivateSubnetB:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: 
+        Ref: "DemoVPC"      
+      AvailabilityZone: "us-east-1b"
+      CidrBlock: "10.0.32.0/20"
+      Tags:
+        -
+          Key: "Name"
+          Value: "PrivateSubnetB"
