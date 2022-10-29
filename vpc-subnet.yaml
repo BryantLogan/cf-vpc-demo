@@ -81,6 +81,9 @@ Resources:
           Key: "Name"
           Value: "DemoVPC-IGW"
 
+# At this point, the instance still has no connectivity
+# Need to create route tables
+
 # Attach IGW to VPC
   IGWAttachment:
     Type: AWS::EC2::VPCGatewayAttachment
@@ -89,3 +92,39 @@ Resources:
         Ref: "DemoIGW"
       VpcId:
         Ref: "DemoVPC"
+
+# Create Public Route Table
+  PublicRouteTable:
+  Type: AWS::EC2::RouteTable
+  Properties:
+    VpcId:
+      Ref: "DemoVPC"
+
+# Create public route
+  PublicRoute:
+    Type: AWS::EC2::Route
+    DependsOn: "DemoIGW"
+    Properties:
+      RouteTableId:
+        Ref: "PublicRouteTable"
+      DestinationCidrBlock: "0.0.0.0/0"
+      GatewayId:
+        Ref: "DemoIGW"
+
+# Create a route table association for Public Subnet A
+  PublicRouteTableAssociationA:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId:
+        Ref: "PublicSubnetA"
+      RouteTableId:
+        Ref: "PublicRouteTable"
+
+# Create a route table associationf or Public Subnet B
+  PublicRouteTableAssociationB:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId:
+        Ref: "PublicSubnetB"
+      RouteTableId:
+        Ref: "PublicRouteTable"
