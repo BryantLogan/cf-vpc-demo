@@ -1,0 +1,10 @@
+Resources:
+  DemoVPC:
+    Type: AWS::EC2::VPC
+    Properties:
+      CidrBlock: "10.0.0.0/16"
+      Tags:
+        - 
+          Key: "DemoVPC"
+          Value: "AWS::StackName"
+  
