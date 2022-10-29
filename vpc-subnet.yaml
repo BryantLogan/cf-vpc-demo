@@ -94,11 +94,11 @@ Resources:
         Ref: "DemoVPC"
 
 # Create Public Route Table
-  PublicRouteTable:
-  Type: AWS::EC2::RouteTable
-  Properties:
-    VpcId:
-      Ref: "DemoVPC"
+  myPublicRouteTable:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId:
+        Ref: "DemoVPC"
 
 # Create public route
   PublicRoute:
@@ -106,7 +106,7 @@ Resources:
     DependsOn: "DemoIGW"
     Properties:
       RouteTableId:
-        Ref: "PublicRouteTable"
+        Ref: "myPublicRouteTable"
       DestinationCidrBlock: "0.0.0.0/0"
       GatewayId:
         Ref: "DemoIGW"
@@ -118,7 +118,7 @@ Resources:
       SubnetId:
         Ref: "PublicSubnetA"
       RouteTableId:
-        Ref: "PublicRouteTable"
+        Ref: "myPublicRouteTable"
 
 # Create a route table associationf or Public Subnet B
   PublicRouteTableAssociationB:
@@ -127,4 +127,4 @@ Resources:
       SubnetId:
         Ref: "PublicSubnetB"
       RouteTableId:
-        Ref: "PublicRouteTable"
+        Ref: "myPublicRouteTable"
