@@ -70,3 +70,22 @@ Resources:
           DeviceIndex: "0"
           SubnetId:
             Ref: "PublicSubnetA"
+
+
+# Create Internet Gateway
+  DemoIGW:
+    Type: AWS::EC2::InternetGateway
+    Properties:
+      Tags:
+        -
+          Key: "Name"
+          Value: "DemoVPC-IGW"
+
+# Attach IGW to VPC
+  IGWAttachment:
+    Type: AWS::EC2::VPCGatewayAttachment
+    Properties:
+      InternetGatewayId:
+        Ref: "DemoIGW"
+      VpcId:
+        Ref: "DemoVPC"
