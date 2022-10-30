@@ -127,6 +127,8 @@ Resources:
         Ref: "DemoIGW"
 
 # Create a route table association for Public Subnet A
+# EC2 Instance can now be used as a bastion host
+# In order to SSH into instances within private subnets
   PublicRouteTableAssociationA:
     Type: AWS::EC2::SubnetRouteTableAssociation
     Properties:
@@ -135,7 +137,7 @@ Resources:
       RouteTableId:
         Ref: "myPublicRouteTable"
 
-# Create a route table associationf or Public Subnet B
+# Create a route table association for Public Subnet B
   PublicRouteTableAssociationB:
     Type: AWS::EC2::SubnetRouteTableAssociation
     Properties:
@@ -143,3 +145,68 @@ Resources:
         Ref: "PublicSubnetB"
       RouteTableId:
         Ref: "myPublicRouteTable"
+
+# Create Key Pair to SSH into instance in private subnet
+  DemoVPCKeyPair:
+    Type: AWS::EC2::KeyPair
+    Properties:
+      KeyName: DemoVPCKeyPair
+
+# Create security group that allows SSH from bastion host
+  BastionHostSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      VpcId:
+        Ref: "DemoVPC"
+      GroupDescription: "Allow SSH from Bastion Host"
+      SecurityGroupIngress:
+        FromPort: 22
+        IpProtocol: "tcp"
+        ToPort: 22
+        SourceSecurityGroupId:
+          Ref: "SSHSecurityGroup"      
+
+# Create EC2 Instance within private subnet A
+# Reference newly created Key Pair
+  PrivateEc2Instance:
+    Type: AWS::EC2::Instance
+    Properties:
+      ImageId: "ami-09d3b3274b6c5d4aa"
+      InstanceType: "t2.micro"
+      KeyName: 
+        Ref: "DemoVPCKeyPair"
+      NetworkInterfaces:
+        - DeviceIndex: "0"
+          GroupSet:
+            - !Ref BastionHostSecurityGroup
+          SubnetId:
+            Ref: "PrivateSubnetA"
+
+# # Create private route
+#   PrivateRoute:
+#     Type: AWS::EC2::Route
+#     DependsOn: "DemoIGW"
+#     Properties:
+#       RouteTableId:
+#         Ref: "myPrivateRouteTable"
+#       DestinationCidrBlock: "0.0.0.0/0"
+#       GatewayId:
+#         Ref: "DemoIGW"
+
+# # Create a route table association for Public Subnet A
+#   PrivateRouteTableAssociationA:
+#     Type: AWS::EC2::SubnetRouteTableAssociation
+#     Properties:
+#       SubnetId:
+#         Ref: "PrivateSubnetA"
+#       RouteTableId:
+#         Ref: "myPrivateRouteTable"
+
+# # Create a route table association for Public Subnet B
+#   PrivateRouteTableAssociationB:
+#     Type: AWS::EC2::SubnetRouteTableAssociation
+#     Properties:
+#       SubnetId:
+#         Ref: "PublicSubnetB"
+#       RouteTableId:
+#         Ref: "myPrivateRouteTable"
