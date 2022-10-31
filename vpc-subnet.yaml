@@ -229,7 +229,7 @@ Resources:
       DestinationCidrBlock: "0.0.0.0/0"
       NatGatewayId: !Ref DemoNATGateway
 
-# Add security group rule to Bastion Host SG
+# Add security group rule for http to Bastion Host SG
   HTTPSecurityGroupRule:
     Type: AWS::EC2::SecurityGroupIngress
     Properties:
@@ -238,3 +238,28 @@ Resources:
       FromPort: 80
       ToPort: 80
       CidrIp: "0.0.0.0/0"
+
+# Create new SG for EC2 instance in default VPC to allow SSH from any IP
+  DefaultSSHSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: "Enable SSH access via port 22"
+      SecurityGroupIngress:
+        - CidrIp: "0.0.0.0/0"
+          FromPort: 22
+          IpProtocol: "tcp"
+          ToPort: 22
+
+# ------ Must create the new SG before creating default EC2 instance ------
+# Create EC2 instance in default VPC with SSH from any IP
+  DefaultVPCInstance:
+    Type: AWS::EC2::Instance
+    Properties:
+      ImageId: "ami-09d3b3274b6c5d4aa"
+      InstanceType: "t2.micro"
+      SecurityGroups:
+        - !Ref DefaultSSHSecurityGroup
+
+# Create Peering connection between default VPC and demo VPC
+  # DemoPeeringConnection:
+  # Type: AWS::EC2::VPCPeeringConnection
