@@ -225,6 +225,16 @@ Resources:
     DependsOn: DemoNATGateway
     Type: AWS::EC2::Route
     Properties:
-      RouteTableID: !Ref "myPrivateRouteTable"
+      RouteTableId: !Ref myPrivateRouteTable
       DestinationCidrBlock: "0.0.0.0/0"
       NatGatewayId: !Ref DemoNATGateway
+
+# Add security group rule to Bastion Host SG
+  HTTPSecurityGroupRule:
+    Type: AWS::EC2::SecurityGroupIngress
+    Properties:
+      GroupId: !Ref SSHSecurityGroup
+      IpProtocol: "tcp"
+      FromPort: 80
+      ToPort: 80
+      CidrIp: "0.0.0.0/0"
