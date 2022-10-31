@@ -181,6 +181,7 @@ Resources:
             - !Ref BastionHostSecurityGroup
           SubnetId:
             Ref: "PrivateSubnetA"
+      IamInstanceProfile: !Ref DemoPrivateInstanceProfile
 
 # Create Private Route Table
   myPrivateRouteTable:
@@ -221,13 +222,13 @@ Resources:
       Domain: "vpc"
 
 # Add route to NAT Gateway to Private Route Table
-  RouteNATGateway:
-    DependsOn: DemoNATGateway
-    Type: AWS::EC2::Route
-    Properties:
-      RouteTableId: !Ref myPrivateRouteTable
-      DestinationCidrBlock: "0.0.0.0/0"
-      NatGatewayId: !Ref DemoNATGateway
+  # RouteNATGateway:
+  #   DependsOn: DemoNATGateway
+  #   Type: AWS::EC2::Route
+  #   Properties:
+  #     RouteTableId: !Ref myPrivateRouteTable
+  #     DestinationCidrBlock: "0.0.0.0/0"
+  #     NatGatewayId: !Ref DemoNATGateway
 
 # Add security group rule for http to Bastion Host SG
   HTTPSecurityGroupRule:
@@ -261,5 +262,129 @@ Resources:
         - !Ref DefaultSSHSecurityGroup
 
 # Create Peering connection between default VPC and demo VPC
-  # DemoPeeringConnection:
-  # Type: AWS::EC2::VPCPeeringConnection
+  DemoPeeringConnection:
+    Type: AWS::EC2::VPCPeeringConnection
+    Properties:
+      VpcId: # Demo vpc id here
+      PeerVpcId: # Default vpc id here
+
+# Modify Public Route Table
+  VPCPeeringPublicRoute:
+    Type: AWS::EC2::Route
+    Properties:
+      RouteTableId:
+        Ref: "myPublicRouteTable"
+      DestinationCidrBlock: "" # <---- your default vpc cidr in this string
+      VpcPeeringConnectionId: !Ref DemoPeeringConnection
+
+# Create IAM role for EC2
+  DemoEC2RoleForS3ReadOnly:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+        - Effect: Allow
+          Principal:
+            Service:
+            - ssm.amazonaws.com
+            - ec2.amazonaws.com
+          Action: sts:AssumeRole
+      ManagedPolicyArns:
+      - arn:aws:iam::aws:policy/service-role/AmazonEC2RoleforSSM
+      - arn:aws:iam::aws:policy/AmazonS3ReadOnlyAccess
+      Path: "/"
+
+# Create instance profile for EC2 instance in private subnet
+  DemoPrivateInstanceProfile:
+    Type: AWS::IAM::InstanceProfile
+    Properties:
+      InstanceProfileName: demo-private-instance-profile
+      Path: /
+      Roles:
+        - !Ref DemoEC2RoleForS3ReadOnly
+
+# Attach role to private EC2 instance
+# Add following code to properties for instance in private VPC:
+# IamInstanceProfile: !Ref DemoPrivateInstanceProfile
+
+# ---- VPC Endpoints ---- 
+
+# Remove route in private route table to NAT Gateway on line 225 - 231
+# This will prevent private instance to access the internet
+
+# Create VPC Endpoint
+  PrivateInstanceS3Endpoint:
+    Type: AWS::EC2::VPCEndpoint
+    Properties:
+      RouteTableIds:
+      - !Ref myPrivateRouteTable
+      ServiceName: 'com.amazonaws.us-east-1.s3'
+      VpcEndpointType: 'Gateway'
+      VpcId: !Ref DemoVPC
+
+# Create S3 bucket for flow log destination
+  DemoS3FlowLogBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: vpc-demo-flow-log-bucket-bryant
+
+# Create VPC Flow Log to S3 bucket 
+  DemoVPCFlowLog:
+    DependsOn: DemoS3FlowLogBucket
+    Type: AWS::EC2::FlowLog
+    Properties:
+      TrafficType: ALL
+      ResourceId: !Ref DemoVPC
+      ResourceType: VPC
+      MaxAggregationInterval: 60
+      LogDestinationType: s3
+      LogDestination: !GetAtt DemoS3FlowLogBucket.Arn
+
+# Create role that allows EC2 to publish flow logs to CW logs group
+  FlowLogsRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+        - Effect: Allow
+          Principal:
+            Service: 'vpc-flow-logs.amazonaws.com'
+          Action: 'sts:AssumeRole'
+      Policies:
+      - PolicyName: 'flowlogs-policy'
+        PolicyDocument:
+          Version: '2012-10-17'
+          Statement:
+          - Effect: Allow
+            Action:
+            - 'logs:CreateLogStream'
+            - 'logs:PutLogEvents'
+            - 'logs:DescribeLogGroups'
+            - 'logs:DescribeLogStreams'
+            Resource: !GetAtt CWLogGroup.Arn
+
+# Create log group for CW VPC Flow log
+  CWLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      RetentionInDays: 1
+
+# Create VPC Flow Log to CloudWatch Logs
+  DemoVPCFlowLogCW:
+    Type: AWS::EC2::FlowLog
+    Properties:
+      DeliverLogsPermissionArn: !GetAtt FlowLogsRole.Arn
+      TrafficType: ALL
+      ResourceId: !Ref DemoVPC
+      ResourceType: VPC
+      LogGroupName: !Ref CWLogGroup
+      MaxAggregationInterval: 60
+
+# Create s3 bucket for Athena query results
+  DemoS3AthenaBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: vpc-demo-athena-log-bucket-bryant
+
